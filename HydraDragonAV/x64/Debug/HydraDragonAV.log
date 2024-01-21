@@ -1,0 +1,4 @@
+﻿  HydraDragonAV.cpp
+HydraDragonAV.obj : error LNK2019: unresolved external symbol "int __cdecl md5_stream(void)" (?md5_stream@@YAHXZ) referenced in function main
+HydraDragonAV.obj : error LNK2019: unresolved external symbol LzmaUncompress referenced in function "int __cdecl ReadMD5HashesFromXZ(wchar_t const *,char * * *,unsigned __int64 *)" (?ReadMD5HashesFromXZ@@YAHPEB_WPEAPEAPEADPEA_K@Z)
+C:\Users\victim\Desktop\HydraDragonAV\x64\Debug\HydraDragonAV.exe : fatal error LNK1120: 2 unresolved externals
