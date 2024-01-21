@@ -1,8 +1,0 @@
-+++ Started at Tue Jan 16 19:26:10 2024
-Received 0 file descriptor(s) from systemd.
-clamd daemon 1.2.1 (OS: Windows, ARCH: AMD64, CPU: AMD64)
-Log file size limited to 1048576 bytes.
-Reading databases from C:\ClamAV\database
-Not loading PUA signatures.
-Bytecode: Security mode set to "TrustSigned".
-+++ Started at Tue Jan 16 19:38:20 2024
