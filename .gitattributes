@@ -1,2 +1,4 @@
 *.cvd filter=lfs diff=lfs merge=lfs -text
 *.cld filter=lfs diff=lfs merge=lfs -text
+*.hdb filter=lfs diff=lfs merge=lfs -text
+*.xz filter=lfs diff=lfs merge=lfs -text
