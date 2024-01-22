@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HydraDragonAV", "HydraDragonAV\HydraDragonAV.vcxproj", "{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HydraDragonAV", "HydraDragonAV\HydraDragonAV.vcxproj", "{9CA515BE-D24E-4265-9EFB-62FAADA47818}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,19 +13,19 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Debug|x64.ActiveCfg = Debug|x64
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Debug|x64.Build.0 = Debug|x64
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Debug|x86.ActiveCfg = Debug|Win32
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Debug|x86.Build.0 = Debug|Win32
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Release|x64.ActiveCfg = Release|x64
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Release|x64.Build.0 = Release|x64
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Release|x86.ActiveCfg = Release|Win32
-		{8F2E84E4-C374-4310-AEF4-C7ECEDD95FEF}.Release|x86.Build.0 = Release|Win32
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Debug|x64.ActiveCfg = Debug|x64
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Debug|x64.Build.0 = Debug|x64
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Debug|x86.ActiveCfg = Debug|Win32
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Debug|x86.Build.0 = Debug|Win32
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Release|x64.ActiveCfg = Release|x64
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Release|x64.Build.0 = Release|x64
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Release|x86.ActiveCfg = Release|Win32
+		{9CA515BE-D24E-4265-9EFB-62FAADA47818}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {28E369E2-BD58-4BC9-A009-B118779AFFFB}
+		SolutionGuid = {384BED4A-0C9C-4AA7-AD11-105E0A1A282A}
 	EndGlobalSection
 EndGlobal

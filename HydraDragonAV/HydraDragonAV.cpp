@@ -1,263 +1,180 @@
-﻿#include <windows.h>
-#include <tchar.h>
-#include <stdio.h>
-#include "md5\md5.h"
-#include "lzma\Lzmalib.h"
+// HydraDragonAV.cpp : Defines the entry point for the application.
+//
 
-#ifdef UNICODE
-#define tcout wprintf
-#endif
+#include "framework.h"
+#include "HydraDragonAV.h"
 
-#define BUF_LEN (10 * (sizeof(FILE_NOTIFY_INFORMATION) + MAX_PATH))
-#define MD5_HASH_SIZE 32
-#define LZMA_PROPS_SIZE 5
+#define MAX_LOADSTRING 100
 
-_TCHAR quarantinePath[MAX_PATH];
+// Global Variables:
+HINSTANCE hInst;                                // current instance
+WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
+WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
-// Function to free memory allocated for MD5 hashes
-void FreeMD5Hashes(char** md5Hashes, size_t numHashes) {
-    for (size_t i = 0; i < numHashes; ++i) {
-        free(md5Hashes[i]);
-    }
-    free(md5Hashes);
-}
+// Forward declarations of functions included in this code module:
+ATOM                MyRegisterClass(HINSTANCE hInstance);
+BOOL                InitInstance(HINSTANCE, int);
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-// Function to terminate a process using taskkill
-void TerminateProcessByFullPath(const _TCHAR* filePath) {
-    _TCHAR command[MAX_PATH + 50];
-    _stprintf_s(command, MAX_PATH + 50, _T("taskkill /F /FI \"MODULES eq %s\""), filePath);
-    system(reinterpret_cast<const char*>(command));
-}
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+                     _In_opt_ HINSTANCE hPrevInstance,
+                     _In_ LPWSTR    lpCmdLine,
+                     _In_ int       nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
 
-// Function to create the C:\Quarantine folder
-void CreateQuarantineFolder() {
-    if (!CreateDirectory(quarantinePath, NULL) && GetLastError() != ERROR_ALREADY_EXISTS) {
-        tcout(_T("Failed to create the quarantine folder.\n"));
-        exit(1);
-    }
-}
+    // TODO: Place code here.
 
-// Function to move a file to the C:\Quarantine folder
-void MoveToQuarantine(const _TCHAR* filePath) {
-    _TCHAR newPath[MAX_PATH];
-    _stprintf_s(newPath, MAX_PATH, _T("%s\\%s"), quarantinePath, _tcsrchr(filePath, _T('\\')) + 1);
+    // Initialize global strings
+    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_HYDRADRAGONAV, szWindowClass, MAX_LOADSTRING);
+    MyRegisterClass(hInstance);
 
-    if (!MoveFile(filePath, newPath)) {
-        tcout(_T("Failed to move the file to quarantine.\n"));
-        exit(1);
-    }
-}
-
-// Function to read MD5 hashes from an XZ-compressed file into memory
-int ReadMD5HashesFromXZ(const _TCHAR* xzFilePath, char*** md5Hashes, size_t* numHashes) {
-    FILE* file;
-    if (_wfopen_s(&file, xzFilePath, _T("rb")) != 0) {
-        tcout(_T("Failed to open file: %s\n"), xzFilePath);
-        return 0;
-    }
-    fseek(file, 0, SEEK_END);
-    size_t fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
-    unsigned char* compressedData = (unsigned char*)malloc(fileSize);
-    if (!compressedData) {
-        fclose(file);
-        tcout(_T("Memory allocation failed.\n"));
-        return 0; // Memory allocation failed
+    // Perform application initialization:
+    if (!InitInstance (hInstance, nCmdShow))
+    {
+        return FALSE;
     }
 
-    if (fread(compressedData, 1, fileSize, file) != fileSize) {
-        free(compressedData);
-        fclose(file);
-        tcout(_T("Failed to read file: %s\n"), xzFilePath);
-        return 0; // Failed to read the file
-    }
+    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_HYDRADRAGONAV));
 
-    fclose(file);
+    MSG msg;
 
-    // Initialize variables for decompression
-    size_t offset = LZMA_PROPS_SIZE;
-    size_t uncompressedSize = 0;
-
-    // Declare uncompressedData outside the loop
-    unsigned char* uncompressedData = nullptr;
-
-    // Decompress the data
-    for (;;) {
-        size_t outSize = (1 << 16);
-        if (!outSize) outSize = 1;
-
-        // Allocate memory for decompressed data
-        uncompressedData = (unsigned char*)malloc(uncompressedSize + outSize);
-        if (!uncompressedData) {
-            free(compressedData);
-            tcout(_T("Memory allocation failed.\n"));
-            return 0; // Memory allocation failed
+    // Main message loop:
+    while (GetMessage(&msg, nullptr, 0, 0))
+    {
+        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
         }
-
-        // Use LzmaUncompress to decompress data
-        size_t destLen = outSize;
-        size_t srcLen = fileSize - offset;
-        SRes result = LzmaUncompress(uncompressedData + uncompressedSize, &destLen, compressedData + offset, &srcLen, NULL, 0);
-
-        if (result != SZ_OK) {
-            free(uncompressedData);
-            free(compressedData);
-            tcout(_T("Decompression failed. Error code: %d\n"), result);
-            return 0; // Decompression failed
-        }
-
-        uncompressedSize += destLen;
-        offset += srcLen;
-
-        if (srcLen == 0) break;
     }
 
-    free(compressedData);
-
-    // Parse the uncompressed data to extract MD5 hashes
-    char* start = (char*)uncompressedData;
-    size_t count = 0;
-
-    while (start < (char*)uncompressedData + uncompressedSize) {
-        char* end = strchr(start, '\n');
-        if (!end) end = (char*)uncompressedData + uncompressedSize;
-
-        *end = '\0';
-        (*md5Hashes)[count] = _strdup(start);
-        if (!(*md5Hashes)[count]) {
-            for (size_t i = 0; i < count; ++i) {
-                free((*md5Hashes)[i]);
-            }
-            free(*md5Hashes);
-            free(uncompressedData);
-            tcout(_T("Memory allocation failed.\n"));
-            return 0; // Memory allocation failed
-        }
-
-        start = end + 1;
-        ++count;
-    }
-
-    free(uncompressedData);
-
-    *numHashes = count;
-    return 1; // Success
+    return (int) msg.wParam;
 }
 
-int main() {
-    // Set the path for the quarantine folder
-    _stprintf_s(quarantinePath, MAX_PATH, _T("C:\\Quarantine"));
 
-    // Create the C:\Quarantine folder
-    CreateQuarantineFolder();
 
-    TCHAR buffer[BUF_LEN];
-    DWORD bytes_returned;
-    HANDLE dir;
+//
+//  FUNCTION: MyRegisterClass()
+//
+//  PURPOSE: Registers the window class.
+//
+ATOM MyRegisterClass(HINSTANCE hInstance)
+{
+    WNDCLASSEXW wcex;
 
-    _TCHAR monitored_path[MAX_PATH] = _T("C:\\");
+    wcex.cbSize = sizeof(WNDCLASSEX);
 
-    dir = CreateFile(
-        monitored_path,
-        FILE_LIST_DIRECTORY,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        NULL,
-        OPEN_EXISTING,
-        FILE_FLAG_BACKUP_SEMANTICS,
-        NULL
-    );
+    wcex.style          = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc    = WndProc;
+    wcex.cbClsExtra     = 0;
+    wcex.cbWndExtra     = 0;
+    wcex.hInstance      = hInstance;
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HYDRADRAGONAV));
+    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_HYDRADRAGONAV);
+    wcex.lpszClassName  = szWindowClass;
+    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-    if (dir == INVALID_HANDLE_VALUE) {
-        tcout(_T("Failed to open directory.\n"));
-        return 1;
-    }
+    return RegisterClassExW(&wcex);
+}
 
-    char** maliciousHashes;
-    size_t numMaliciousHashes;
+//
+//   FUNCTION: InitInstance(HINSTANCE, int)
+//
+//   PURPOSE: Saves instance handle and creates main window
+//
+//   COMMENTS:
+//
+//        In this function, we save the instance handle in a global variable and
+//        create and display the main program window.
+//
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+{
+   hInst = hInstance; // Store instance handle in our global variable
 
-    // Read malicious MD5 hashes from virusshare.xz
-    if (!ReadMD5HashesFromXZ(_T("signatures\\hash\\virusshare.xz"), &maliciousHashes, &numMaliciousHashes)) {
-        tcout(_T("Failed to read malicious MD5 hashes.\n"));
-        FreeMD5Hashes(maliciousHashes, numMaliciousHashes);
-        CloseHandle(dir);
-        return 1;
-    }
+   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-    bool exitLoop = false;
+   if (!hWnd)
+   {
+      return FALSE;
+   }
 
-    while (!exitLoop) {
-        if (!ReadDirectoryChangesW(
-            dir,
-            buffer,
-            BUF_LEN,
-            TRUE,
-            FILE_NOTIFY_CHANGE_FILE_NAME |
-            FILE_NOTIFY_CHANGE_DIR_NAME |
-            FILE_NOTIFY_CHANGE_ATTRIBUTES |
-            FILE_NOTIFY_CHANGE_SIZE |
-            FILE_NOTIFY_CHANGE_LAST_WRITE |
-            FILE_NOTIFY_CHANGE_SECURITY |
-            FILE_NOTIFY_CHANGE_LAST_ACCESS,
-            &bytes_returned,
-            NULL,
-            NULL
-        )) {
-            tcout(_T("Failed to read directory changes.\n"));
-        }
-        else {
-            FILE_NOTIFY_INFORMATION* fni = (FILE_NOTIFY_INFORMATION*)buffer;
-            _TCHAR full_path[MAX_PATH];
-            size_t path_len = _tcslen(monitored_path);
-            size_t file_name_len = fni->FileNameLength / sizeof(WCHAR);
+   ShowWindow(hWnd, nCmdShow);
+   UpdateWindow(hWnd);
 
-            if ((path_len + file_name_len) < MAX_PATH) {
-                _tcsncpy_s(full_path, MAX_PATH, monitored_path, path_len);
-                _tcsncpy_s(full_path + path_len, MAX_PATH - path_len, fni->FileName, file_name_len);
-                full_path[path_len + file_name_len] = _T('\0');
+   return TRUE;
+}
 
-                // Calculate MD5 hash of the file
-                char md5Hash[MD5_HASH_SIZE];
-                FILE* fileStream;
-                if (_wfopen_s(&fileStream, full_path, _T("rb")) == 0) {
-                    if (md5_stream() == 0) {
-                        // Check if the MD5 hash is in the list of known malicious hashes
-                        int isMalicious = 0;
-                        for (size_t i = 0; i < numMaliciousHashes; ++i) {
-                            if (strcmp(md5Hash, maliciousHashes[i]) == 0) {
-                                isMalicious = 1;
-                                break;
-                            }
-                        }
-
-                        // Take appropriate action for malware detection
-                        if (isMalicious) {
-                            tcout(_T("File is malicious: %s\n"), full_path);
-                            // Terminate the process using taskkill
-                            TerminateProcessByFullPath(full_path);
-
-                            // Move the infected file to quarantine
-                            MoveToQuarantine(full_path);
-                        }
-                        else {
-                            tcout(_T("File is clean: %s\n"), full_path);
-                        }
-                    }
-                    fclose(fileStream);
-                }
-                else {
-                    tcout(_T("Error opening file: %s\n"), full_path);
-                }
-            }
-            else {
-                tcout(_T("File path is too long.\n"));
+//
+//  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
+//
+//  PURPOSE: Processes messages for the main window.
+//
+//  WM_COMMAND  - process the application menu
+//  WM_PAINT    - Paint the main window
+//  WM_DESTROY  - post a quit message and return
+//
+//
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_COMMAND:
+        {
+            int wmId = LOWORD(wParam);
+            // Parse the menu selections:
+            switch (wmId)
+            {
+            case IDM_ABOUT:
+                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                break;
+            case IDM_EXIT:
+                DestroyWindow(hWnd);
+                break;
+            default:
+                return DefWindowProc(hWnd, message, wParam, lParam);
             }
         }
+        break;
+    case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            // TODO: Add any drawing code that uses hdc here...
+            EndPaint(hWnd, &ps);
+        }
+        break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
     }
-
-    // Free memory allocated for malicious MD5 hashes
-    FreeMD5Hashes(maliciousHashes, numMaliciousHashes);
-
-    CloseHandle(dir);
     return 0;
+}
+
+// Message handler for about box.
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    UNREFERENCED_PARAMETER(lParam);
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+        {
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
 }
