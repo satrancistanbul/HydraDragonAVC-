@@ -14,16 +14,16 @@
 #include <vector>    /// For std::vector
 #include <algorithm>  /// For std::copy
 #include <vector>     /// For std::vector
-#include "sha256.cpp"
 #include "md5.cpp"
 #include "sha1.cpp"
+#include "sha256.cpp"
 
 #define IDC_CALCULATE_MD5 1001
 #define IDC_CALCULATE_SHA256 1002
 #define IDC_CALCULATE_SHA1 1003
 
 void CalculateSHA256() {
-    OPENFILENAME ofn;
+    OPENFILENAMEW ofn;
     WCHAR szFileName[MAX_PATH] = L"";
 
     ZeroMemory(&ofn, sizeof(ofn));
@@ -39,7 +39,7 @@ void CalculateSHA256() {
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileName(&ofn)) {
+    if (GetOpenFileNameW(&ofn)) {
         g_filePath = szFileName;
 
         // Convert the wide string to narrow string
@@ -78,7 +78,7 @@ void CalculateSHA256() {
 }
 
 void CalculateMD5() {
-    OPENFILENAME ofn;
+    OPENFILENAMEW ofn;
     WCHAR szFileName[MAX_PATH] = L"";
 
     ZeroMemory(&ofn, sizeof(ofn));
@@ -94,7 +94,7 @@ void CalculateMD5() {
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileName(&ofn)) {
+    if (GetOpenFileNameW(&ofn)) {
         g_filePath = szFileName;
 
         // Call your MD5 hash calculation function with the file path
@@ -105,14 +105,14 @@ void CalculateMD5() {
         }
         else {
             // Display an error message if MD5 calculation fails
-            MessageBox(nullptr, L"Failed to calculate MD5 hash.", L"Error", MB_OK | MB_ICONERROR);
+            MessageBoxW(nullptr, L"Failed to calculate MD5 hash.", L"Error", MB_OK | MB_ICONERROR);
         }
     }
 }
 
 void CalculateSHA1() {
-    OPENFILENAME ofn;
-    WCHAR szFileName[MAX_PATH] = L"";
+    OPENFILENAMEA ofn; // Use OPENFILENAMEA for ANSI
+    CHAR szFileName[MAX_PATH] = "";
 
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -120,21 +120,18 @@ void CalculateSHA1() {
     ofn.lpstrFile = szFileName;
     ofn.lpstrFile[0] = '\0';
     ofn.nMaxFile = sizeof(szFileName) / sizeof(*szFileName);
-    ofn.lpstrFilter = L"All Files\0*.*\0";
+    ofn.lpstrFilter = "All Files\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileName(&ofn)) {
-        g_filePath = szFileName;
-
-        // Convert the wide string to narrow string
-        std::string narrowFilePath(g_filePath.begin(), g_filePath.end());
+    if (GetOpenFileNameA(&ofn)) { // Use GetOpenFileNameA for ANSI
+        std::string filePath = szFileName;
 
         // Open the file in binary mode
-        std::ifstream file(narrowFilePath, std::ios::binary);
+        std::ifstream file(filePath, std::ios::binary);
 
         if (file.is_open()) {
             // Calculate SHA1 hash
@@ -149,15 +146,12 @@ void CalculateSHA1() {
             file.close();
 
             if (!sha1Hex.empty()) {
-                // Convert the SHA1 hash to a wide string
-                std::wstring wideSHA1Hash(sha1Hex.begin(), sha1Hex.end());
-
                 // Display the SHA1 hash in a message box
-                MessageBoxW(nullptr, wideSHA1Hash.c_str(), L"SHA1 Hash", MB_OK | MB_ICONINFORMATION);
+                MessageBoxA(nullptr, sha1Hex.c_str(), "SHA1 Hash", MB_OK | MB_ICONINFORMATION);
             }
             else {
                 // Display an error message if SHA1 calculation fails
-                MessageBoxW(nullptr, L"Failed to calculate SHA1 hash.", L"Error", MB_OK | MB_ICONERROR);
+                MessageBoxA(nullptr, "Failed to calculate SHA1 hash.", "Error", MB_OK | MB_ICONERROR);
             }
 
             // Clean up allocated memory
@@ -165,7 +159,7 @@ void CalculateSHA1() {
         }
         else {
             // Display an error message if the file cannot be opened
-            MessageBoxW(nullptr, L"Failed to open the file.", L"Error", MB_OK | MB_ICONERROR);
+            MessageBoxA(nullptr, "Failed to open the file.", "Error", MB_OK | MB_ICONERROR);
         }
     }
 }
@@ -174,7 +168,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     switch (message) {
     case WM_CREATE: {
         // Create the "Calculate MD5" button
-        HWND hButtonMD5 = CreateWindow(
+        HWND hButtonMD5 = CreateWindowW(
             L"BUTTON",
             L"Calculate MD5",
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -188,35 +182,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             // Handle button creation failure
             return -1;
         }
-
-        // Create the "Calculate SHA256" button
-        HWND hButtonSHA256 = CreateWindow(
-            L"BUTTON",
-            L"Calculate SHA256",
-            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-            140, 10, 120, 30,
-            hWnd,
-            (HMENU)IDC_CALCULATE_SHA256,
-            hInst,
-            nullptr);
-
-        if (hButtonSHA256 == nullptr) {
-            // Handle button creation failure
-            return -1;
-        }
-
         // Create the "Calculate SHA1" button
-        HWND hButtonSHA1 = CreateWindow(
+        HWND hButtonSHA1 = CreateWindowW(
             L"BUTTON",
             L"Calculate SHA1",
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-            270, 10, 120, 30,
+            140, 10, 120, 30,
             hWnd,
             (HMENU)IDC_CALCULATE_SHA1,
             hInst,
             nullptr);
 
         if (hButtonSHA1 == nullptr) {
+            // Handle button creation failure
+            return -1;
+        }
+
+        // Create the "Calculate SHA256" button
+        HWND hButtonSHA256 = CreateWindowW(
+            L"BUTTON",
+            L"Calculate SHA256",
+            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+            270, 10, 120, 30,
+            hWnd,
+            (HMENU)IDC_CALCULATE_SHA256,
+            hInst,
+            nullptr);
+
+        if (hButtonSHA256 == nullptr) {
             // Handle button creation failure
             return -1;
         }

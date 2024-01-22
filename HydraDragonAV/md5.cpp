@@ -1,5 +1,4 @@
 using namespace std;
-
 #define IDC_CALCULATE_MD5 1001
 #define IDC_CALCULATE_SHA256 1002
 

@@ -301,11 +301,3 @@ static void interactive() {
  * @brief Main function
  * @returns 0 on exit
  */
-int main() {
-    test();  // run self-test implementations
-
-    // Launch interactive mode where user can input messages and see
-    // their hash
-    interactive();
-    return 0;
-}
