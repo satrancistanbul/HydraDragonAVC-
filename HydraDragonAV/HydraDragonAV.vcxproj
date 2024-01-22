@@ -139,8 +139,8 @@
     <ResourceCompile Include="HydraDragonAV.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\x64\Debug\assets\icon.ico" />
     <Image Include="HydraDragonAV.ico" />
-    <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -39,10 +39,10 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="small.ico">
+    <Image Include="HydraDragonAV.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="HydraDragonAV.ico">
+    <Image Include="..\x64\Debug\assets\icon.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
