@@ -1,5 +1,7 @@
 ﻿  HydraDragonAV.cpp
-C:\Users\victim\HydraDragonAV\HydraDragonAV\HydraDragonAV.cpp(165,12): warning C4101: 'k': unreferenced local variable
+C:\Users\victim\HydraDragonAV\HydraDragonAV\md5.cpp(150,12): warning C4101: 'k': unreferenced local variable
+  (compiling source file 'HydraDragonAV.cpp')
+  
 C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(2749,53): warning C4244: 'argument': conversion from 'wchar_t' to 'const _Elem', possible loss of data
 C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(2749,53): warning C4244:         with
 C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(2749,53): warning C4244:         [
@@ -8,7 +10,7 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.3313
   (compiling source file 'HydraDragonAV.cpp')
   C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(2749,53):
   the template instantiation context (the oldest one first) is
-  	C:\Users\victim\HydraDragonAV\HydraDragonAV\HydraDragonAV.cpp(437,35):
+  	C:\Users\victim\HydraDragonAV\HydraDragonAV\HydraDragonAV.cpp(46,35):
   	see reference to function template instantiation 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>::basic_string<std::_String_iterator<std::_String_val<std::_Simple_types<_Elem>>>,0>(_Iter,_Iter,const _Alloc &)' being compiled
           with
           [
@@ -16,7 +18,7 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.3313
               _Iter=std::_String_iterator<std::_String_val<std::_Simple_types<wchar_t>>>,
               _Alloc=std::allocator<char>
           ]
-  		C:\Users\victim\HydraDragonAV\HydraDragonAV\HydraDragonAV.cpp(437,35):
+  		C:\Users\victim\HydraDragonAV\HydraDragonAV\HydraDragonAV.cpp(46,35):
   		see the first reference to 'std::basic_string<char,std::char_traits<char>,std::allocator<char>>::basic_string' in 'CalculateSHA256'
   	C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xstring(2590,17):
   	see reference to function template instantiation 'void std::basic_string<char,std::char_traits<char>,std::allocator<char>>::_Construct_from_iter<wchar_t*,wchar_t*,_Size_type>(_Iter,const _Sent,_Size)' being compiled
