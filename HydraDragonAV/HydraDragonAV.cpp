@@ -14,16 +14,18 @@
 #include <vector>    /// For std::vector
 #include <algorithm>  /// For std::copy
 #include <vector>     /// For std::vector
+#include "sha256.cpp"
 #include "md5.cpp"
 #include "sha1.cpp"
-#include "sha256.cpp"
-
+#include "ssdeep\fuzzy.h"
+#pragma comment(lib, "ssdeep\\fuzzy.lib")
 #define IDC_CALCULATE_MD5 1001
-#define IDC_CALCULATE_SHA256 1002
-#define IDC_CALCULATE_SHA1 1003
+#define IDC_CALCULATE_SHA1 1002
+#define IDC_CALCULATE_SHA256 1003
+#define IDC_CALCULATE_SSDEEP 1004  // Define ID for the ssdeep button
 
-void CalculateSHA256() {
-    OPENFILENAMEW ofn;
+void CalculateSSDeep() {
+    OPENFILENAME ofn;
     WCHAR szFileName[MAX_PATH] = L"";
 
     ZeroMemory(&ofn, sizeof(ofn));
@@ -39,7 +41,66 @@ void CalculateSHA256() {
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileNameW(&ofn)) {
+    if (GetOpenFileName(&ofn)) {
+        g_filePath = szFileName;
+
+        // Convert the wide string to narrow string
+        std::string narrowFilePath(g_filePath.begin(), g_filePath.end());
+
+        // Open the file in binary mode
+        std::ifstream file(narrowFilePath, std::ios::binary);
+
+        if (file.is_open()) {
+            // Read the entire file into a buffer
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            std::string fileContentBuffer = buffer.str();
+
+            // Allocate a buffer for the result
+            char resultBuffer[FUZZY_MAX_RESULT];
+
+            // Compute the SSDeep hash
+            int status = fuzzy_hash_buf(reinterpret_cast<const unsigned char*>(fileContentBuffer.c_str()), fileContentBuffer.size(), resultBuffer);
+
+            file.close();
+
+            if (status == 0) {
+                // Convert the SSDeep hash to a wide string
+                std::wstring wideSSDeepHash(resultBuffer, resultBuffer + FUZZY_MAX_RESULT);
+
+                // Display the SSDeep hash in a message box
+                MessageBoxW(nullptr, wideSSDeepHash.c_str(), L"SSDeep Hash", MB_OK | MB_ICONINFORMATION);
+            }
+            else {
+                // Display an error message if SSDeep calculation fails
+                MessageBoxW(nullptr, L"Failed to calculate SSDeep hash.", L"Error", MB_OK | MB_ICONERROR);
+            }
+        }
+        else {
+            // Display an error message if the file cannot be opened
+            MessageBoxW(nullptr, L"Failed to open the file.", L"Error", MB_OK | MB_ICONERROR);
+        }
+    }
+}
+
+void CalculateSHA256() {
+    OPENFILENAME ofn;
+    WCHAR szFileName[MAX_PATH] = L"";
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFileName;
+    ofn.lpstrFile[0] = '\0';
+    ofn.nMaxFile = sizeof(szFileName) / sizeof(*szFileName);
+    ofn.lpstrFilter = L"All Files\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileName(&ofn)) {
         g_filePath = szFileName;
 
         // Convert the wide string to narrow string
@@ -78,7 +139,7 @@ void CalculateSHA256() {
 }
 
 void CalculateMD5() {
-    OPENFILENAMEW ofn;
+    OPENFILENAME ofn;
     WCHAR szFileName[MAX_PATH] = L"";
 
     ZeroMemory(&ofn, sizeof(ofn));
@@ -94,7 +155,7 @@ void CalculateMD5() {
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileNameW(&ofn)) {
+    if (GetOpenFileName(&ofn)) {
         g_filePath = szFileName;
 
         // Call your MD5 hash calculation function with the file path
@@ -105,14 +166,14 @@ void CalculateMD5() {
         }
         else {
             // Display an error message if MD5 calculation fails
-            MessageBoxW(nullptr, L"Failed to calculate MD5 hash.", L"Error", MB_OK | MB_ICONERROR);
+            MessageBox(nullptr, L"Failed to calculate MD5 hash.", L"Error", MB_OK | MB_ICONERROR);
         }
     }
 }
 
 void CalculateSHA1() {
-    OPENFILENAMEA ofn; // Use OPENFILENAMEA for ANSI
-    CHAR szFileName[MAX_PATH] = "";
+    OPENFILENAME ofn;
+    WCHAR szFileName[MAX_PATH] = L"";
 
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
@@ -120,18 +181,21 @@ void CalculateSHA1() {
     ofn.lpstrFile = szFileName;
     ofn.lpstrFile[0] = '\0';
     ofn.nMaxFile = sizeof(szFileName) / sizeof(*szFileName);
-    ofn.lpstrFilter = "All Files\0*.*\0";
+    ofn.lpstrFilter = L"All Files\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
     ofn.nMaxFileTitle = 0;
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    if (GetOpenFileNameA(&ofn)) { // Use GetOpenFileNameA for ANSI
-        std::string filePath = szFileName;
+    if (GetOpenFileName(&ofn)) {
+        g_filePath = szFileName;
+
+        // Convert the wide string to narrow string
+        std::string narrowFilePath(g_filePath.begin(), g_filePath.end());
 
         // Open the file in binary mode
-        std::ifstream file(filePath, std::ios::binary);
+        std::ifstream file(narrowFilePath, std::ios::binary);
 
         if (file.is_open()) {
             // Calculate SHA1 hash
@@ -146,12 +210,15 @@ void CalculateSHA1() {
             file.close();
 
             if (!sha1Hex.empty()) {
+                // Convert the SHA1 hash to a wide string
+                std::wstring wideSHA1Hash(sha1Hex.begin(), sha1Hex.end());
+
                 // Display the SHA1 hash in a message box
-                MessageBoxA(nullptr, sha1Hex.c_str(), "SHA1 Hash", MB_OK | MB_ICONINFORMATION);
+                MessageBoxW(nullptr, wideSHA1Hash.c_str(), L"SHA1 Hash", MB_OK | MB_ICONINFORMATION);
             }
             else {
                 // Display an error message if SHA1 calculation fails
-                MessageBoxA(nullptr, "Failed to calculate SHA1 hash.", "Error", MB_OK | MB_ICONERROR);
+                MessageBoxW(nullptr, L"Failed to calculate SHA1 hash.", L"Error", MB_OK | MB_ICONERROR);
             }
 
             // Clean up allocated memory
@@ -159,7 +226,7 @@ void CalculateSHA1() {
         }
         else {
             // Display an error message if the file cannot be opened
-            MessageBoxA(nullptr, "Failed to open the file.", "Error", MB_OK | MB_ICONERROR);
+            MessageBoxW(nullptr, L"Failed to open the file.", L"Error", MB_OK | MB_ICONERROR);
         }
     }
 }
@@ -168,7 +235,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     switch (message) {
     case WM_CREATE: {
         // Create the "Calculate MD5" button
-        HWND hButtonMD5 = CreateWindowW(
+        HWND hButtonMD5 = CreateWindow(
             L"BUTTON",
             L"Calculate MD5",
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -182,8 +249,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             // Handle button creation failure
             return -1;
         }
+
         // Create the "Calculate SHA1" button
-        HWND hButtonSHA1 = CreateWindowW(
+        HWND hButtonSHA1 = CreateWindow(
             L"BUTTON",
             L"Calculate SHA1",
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -199,7 +267,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         }
 
         // Create the "Calculate SHA256" button
-        HWND hButtonSHA256 = CreateWindowW(
+        HWND hButtonSHA256 = CreateWindow(
             L"BUTTON",
             L"Calculate SHA256",
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
@@ -210,6 +278,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             nullptr);
 
         if (hButtonSHA256 == nullptr) {
+            // Handle button creation failure
+            return -1;
+        }
+
+        // Create the "Calculate SSDeep" button
+        HWND hButtonSSDeep = CreateWindow(
+            L"BUTTON",
+            L"Calculate SSDeep",
+            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+            400, 10, 120, 30,
+            hWnd,
+            (HMENU)IDC_CALCULATE_SSDEEP,
+            hInst,
+            nullptr);
+
+        if (hButtonSSDeep == nullptr) {
             // Handle button creation failure
             return -1;
         }
@@ -225,6 +309,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         case IDC_CALCULATE_SHA256:
             CalculateSHA256();
             break;
+        case IDC_CALCULATE_SSDEEP:
+            CalculateSSDeep();
+            break;
         case IDC_CALCULATE_SHA1:  // Added case for SHA-1 calculation
             CalculateSHA1();
             break;
@@ -237,15 +324,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
+        break;
     }
-                   break;
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
         // TODO: Add any drawing code that uses hdc here...
         EndPaint(hWnd, &ps);
+        break;
     }
-                 break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
