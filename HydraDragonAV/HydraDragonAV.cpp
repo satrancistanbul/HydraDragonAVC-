@@ -17,12 +17,74 @@
 #include "sha256.cpp"
 #include "md5.cpp"
 #include "sha1.cpp"
-#include "ssdeep\fuzzy.h"
+#include "ssdeep\\fuzzy.h"
+#include "tlsh\\tlsh.h"
 #pragma comment(lib, "ssdeep\\fuzzy.lib")
+#pragma comment(lib, "tlsh\\tlsh.lib")
 #define IDC_CALCULATE_MD5 1001
 #define IDC_CALCULATE_SHA1 1002
 #define IDC_CALCULATE_SHA256 1003
 #define IDC_CALCULATE_SSDEEP 1004  // Define ID for the ssdeep button
+#define IDC_CALCULATE_TLSH 1005  // Define ID for the ssdeep button
+void CalculateTLSH() {
+    OPENFILENAME ofn;
+    WCHAR szFileName[MAX_PATH] = L"";
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFileName;
+    ofn.lpstrFile[0] = '\0';
+    ofn.nMaxFile = sizeof(szFileName) / sizeof(*szFileName);
+    ofn.lpstrFilter = L"All Files\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+    if (GetOpenFileName(&ofn)) {
+        g_filePath = szFileName;
+
+        // Convert the wide string to narrow string
+        std::string narrowFilePath(g_filePath.begin(), g_filePath.end());
+
+        // Open the file in binary mode
+        std::ifstream file(narrowFilePath, std::ios::binary);
+
+        if (file.is_open()) {
+            // Calculate TLSH hash
+            Tlsh tlsh;
+            const int buffer_size = 8192;
+            char buffer[buffer_size];
+            while (file.read(buffer, buffer_size)) {
+                tlsh.update(reinterpret_cast<const unsigned char*>(buffer), file.gcount());
+            }
+            tlsh.final();
+
+            // Get the TLSH hash
+            const char* tlshHash = tlsh.getHash();
+
+            file.close();
+
+            if (tlsh.isValid()) {
+                // Convert the TLSH hash to a wide string
+                std::wstring wideTLSHHash(tlshHash, tlshHash + strlen(tlshHash));
+
+                // Display the TLSH hash in a message box
+                MessageBoxW(nullptr, wideTLSHHash.c_str(), L"TLSH Hash", MB_OK | MB_ICONINFORMATION);
+            }
+            else {
+                // Display an error message if TLSH calculation fails
+                MessageBoxW(nullptr, L"Failed to calculate TLSH hash.", L"Error", MB_OK | MB_ICONERROR);
+            }
+        }
+        else {
+            // Display an error message if the file cannot be opened
+            MessageBoxW(nullptr, L"Failed to open the file.", L"Error", MB_OK | MB_ICONERROR);
+        }
+    }
+}
 
 void CalculateSSDeep() {
     OPENFILENAME ofn;
@@ -298,6 +360,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             return -1;
         }
 
+        // Create the "Calculate TLSH" button
+        HWND hButtonTLSH = CreateWindow(
+            L"BUTTON",
+            L"Calculate TLSH",
+            WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+            530, 10, 120, 30,
+            hWnd,
+            (HMENU)IDC_CALCULATE_TLSH,
+            hInst,
+            nullptr);
+
+        if (hButtonTLSH == nullptr) {
+            // Handle button creation failure
+            return -1;
+        }
+
         break;
     }
     case WM_COMMAND: {
@@ -314,6 +392,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             break;
         case IDC_CALCULATE_SHA1:  // Added case for SHA-1 calculation
             CalculateSHA1();
+            break;
+        case IDC_CALCULATE_TLSH:  // Added case for TLSH calculation
+            CalculateTLSH();
             break;
         case IDM_ABOUT:
             DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
